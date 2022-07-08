@@ -20,6 +20,7 @@ from typing import (
 import bson.json_util
 import pymongo
 import requests
+import websocket
 
 TSource = TypeVar("TSource", bound=Callable)
 TTarget = TypeVar("TTarget", bound=Callable)
@@ -98,44 +99,43 @@ class PymongoProxyMeta(abc.ABCMeta):
         super().__init__(name, bases, namespace)
 
 
-class PymongoAPIBase(abc.ABC):
+class _PymongoAPIBase(abc.ABC):
     """Abstract base for making Pymongo requests to server"""
+
+    def __init__(self, *args, **kwargs):
+        self._init_args = args
+        self._init_kwargs = kwargs
 
     @property
     @abc.abstractmethod
     def api_endpoint_url(self) -> str:
         """Endpoint of server"""
-        ...
 
-    def _build_payload(  # pylint: disable=dangerous-default-value
+    @staticmethod
+    def serialize_for_request(value: Any):
+        return bson.json_util.dumps(value)
+
+    @staticmethod
+    def deserialize_from_request(value: Any):
+        return bson.json_util.loads(value)
+
+    def build_payload(  # pylint: disable=dangerous-default-value
         self,
-        pymongo_method_name: Optional[str] = None,
+        *,
+        pymongo_attr_name: Optional[str] = None,
         pymongo_args: Optional[List[Any]] = [],
         pymongo_kwargs: Optional[Dict[str, Any]] = {},
     ) -> str:
         return dict(
-            method_name=pymongo_method_name,
-            args=bson.json_util.dumps(pymongo_args),
-            kwargs=bson.json_util.dumps(pymongo_kwargs),
+            attr=pymongo_attr_name,
+            attr_ar=self.serialize_for_request(pymongo_args),
+            attr_kw=self.serialize_for_request(pymongo_kwargs),
         )
 
-    def build_payload(  # pylint: disable=dangerous-default-value
-        self,
-        pymongo_method_name: Optional[str] = None,
-        pymongo_args: Optional[List[Any]] = [],
-        pymongo_kwargs: Optional[Dict[str, Any]] = {},
-    ) -> str:
-        """Create serialized payload for request"""
-        return json.dumps(
-            self._build_payload(
-                pymongo_method_name,
-                pymongo_args,
-                pymongo_kwargs,
-            )
+    def _request(self, payload: dict[str, Any]) -> Any:
+        response = requests.post(
+            url=self.api_endpoint_url, data=json.dumps(payload)
         )
-
-    def _request(self, payload: str) -> Any:
-        response = requests.post(url=self.api_endpoint_url, data=payload)
         try:
             response.raise_for_status()
         except requests.HTTPError as http_err:
@@ -156,16 +156,61 @@ class PymongoAPIBase(abc.ABC):
 
     def request(  # pylint: disable=dangerous-default-value
         self,
-        /,
-        pymongo_method_name: Optional[str] = None,
+        *,
+        pymongo_attr_name: Optional[str] = None,
         pymongo_args: Optional[List[Any]] = [],
         pymongo_kwargs: Optional[Dict[str, Any]] = {},
     ) -> Any:
         """Makes the request to the server"""
         payload = self.build_payload(
-            pymongo_method_name, pymongo_args, pymongo_kwargs
+            pymongo_attr_name=pymongo_attr_name,
+            pymongo_args=pymongo_args,
+            pymongo_kwargs=pymongo_kwargs,
         )
         return_value = self._request(payload)
         if return_value:
-            return bson.json_util.loads(return_value)
+            return self.deserialize_from_request(return_value)
         return return_value
+
+
+class PymongoAPIBase(_PymongoAPIBase, abc.ABC):
+    ...
+
+
+class PymongoWSBase(_PymongoAPIBase, abc.ABC):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._ws = websocket.create_connection(self.api_endpoint_url)
+        self._closed = False
+
+    def __iter__(self):
+        return self
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        self.close()
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:  # pylint: disable=broad-except
+            ...
+
+    def _request(self, payload: dict[str, Any]) -> Any:
+        self._ws.send(json.dumps(payload))
+        return self._ws.recv()
+
+    def next(self) -> Any:
+        """Advance the cursor."""
+        return_value = self.request(pymongo_attr_name="next")
+        if return_value is None:
+            raise StopIteration
+
+    __next__ = next
+
+    def close(self) -> None:
+        if not self._closed:
+            self._ws.close()
+        self._closed = True

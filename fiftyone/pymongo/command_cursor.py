@@ -11,23 +11,22 @@ from typing import (
     List,
     Optional,
     Tuple,
-    TypeVar,
-    # overload,
+    Union,
 )
 
-from pymongo.cursor import Cursor as _Cursor
+from pymongo.command_cursor import CommandCursor as _CommandCursor
 
 from fiftyone.pymongo.util import PymongoWSBase, PymongoProxyMeta
 
 if TYPE_CHECKING:
+    from fiftyone.pymongo.client import Client
+    from fiftyone.pymongo.database import Database
     from fiftyone.pymongo.collection import Collection
-
-_DocumentType = TypeVar("_DocumentType")
 
 
 def _proxy_return_self(
     method_name: str,
-    instance: "Cursor",
+    instance: "CommandCursor",
     *args,
     **kwargs,
 ) -> Any:
@@ -39,48 +38,32 @@ def _proxy_return_self(
     return instance
 
 
-class Cursor(
+class CommandCursor(
     PymongoWSBase,
     metaclass=PymongoProxyMeta,
-    pymongo_cls=_Cursor,
+    pymongo_cls=_CommandCursor,
     pymongo_method_proxy=_proxy_return_self,
 ):
     """Proxy class for pymongo.cursor.Cursor"""
 
     def __init__(
         self,
-        collection: "Collection",
+        target: Union["Client", "Database", "Collection"],
+        command: str,
         *args: Any,
-        __messages=None,
         **kwargs: Any,
     ):
-        self._collection = collection
         super().__init__(*args, **kwargs)
-
-        self._sent_messages = []
-        if __messages:
-            for msg in __messages:
-                self._request(msg)
-                self._sent_messages.append(msg)
-        else:
-            self.request()
+        self._target = target
+        self._command = command
+        self.request()
 
     @property
     def api_endpoint_url(self) -> str:
         return os.path.join(
-            self.collection.api_endpoint_url.replace("http", "ws"), "cursor"
+            self._target.api_endpoint_url.replace("http", "ws"),
+            "command_cursor",
         )
-
-    @property
-    def collection(self) -> "Collection[_DocumentType]":
-        """The collection this cursor is bound to"""
-        return self._collection
-
-    def __copy__(self) -> "Cursor[_DocumentType]":
-        return self.clone()
-
-    def __deepcopy__(self, memo: Any) -> Any:
-        return self.clone()
 
     @property
     def address(self) -> Optional[Tuple[str, Any]]:
@@ -90,20 +73,6 @@ class Cursor(
     def session(self) -> None:
         return None
 
-    def clone(self):
-        """Clone the cursor"""
-        return self.__class__(self._collection, __messages=self._sent_messages)
-
-    def explain(self) -> _DocumentType:
-        """Close the cursor"""
-        # Overriding because default behavior is to proxy and return self
-        return self.request(pymongo_attr_name="explain")
-
-    def distinct(self, key: str) -> List:
-        """Get distinct"""
-        # Overriding because default behavior is to proxy and return self
-        return self.request(pymongo_attr_name="distinct", pymongo_args=[key])
-
     def build_payload(  # pylint: disable=dangerous-default-value
         self,
         *,
@@ -111,28 +80,24 @@ class Cursor(
         pymongo_args: Optional[List[Any]] = [],
         pymongo_kwargs: Optional[Dict[str, Any]] = {},
     ) -> Dict[str, Any]:
-        payload = self.collection.build_payload(
+        payload = self._target.build_payload(
             pymongo_attr_name=pymongo_attr_name,
             pymongo_args=pymongo_args,
             pymongo_kwargs=pymongo_kwargs,
         )
 
         payload.update(
+            crs_cmd=self._command,
             crs_ar=self.serialize_for_request(self._init_args),
             crs_kw=self.serialize_for_request(self._init_kwargs),
         )
 
         return payload
 
-    def _request(self, payload: dict[str, Any]) -> Any:
-        return_value = super()._request(payload)
-        self._sent_messages.append(payload)
-        return return_value
 
-
-class RawBatchCursor(
-    Cursor,
-    pymongo_cls=_Cursor,
+class RawBatchCommandCursor(
+    CommandCursor,
+    pymongo_cls=_CommandCursor,
     pymongo_method_proxy=_proxy_return_self,
 ):
     ...
