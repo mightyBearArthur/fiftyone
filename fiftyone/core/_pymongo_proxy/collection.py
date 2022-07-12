@@ -16,21 +16,20 @@ from pymongo.aggregation import (
 )
 from pymongo.collection import Collection as _Collection
 
-from fiftyone.pymongo.change_stream import CollectionChangeStream
-from fiftyone.pymongo.command_cursor import (
+from fiftyone.core._pymongo_proxy.change_stream import CollectionChangeStream
+from fiftyone.core._pymongo_proxy.command_cursor import (
     CommandCursor,
     RawBatchCommandCursor,
 )
-from fiftyone.pymongo.cursor import Cursor, RawBatchCursor
-
-from fiftyone.pymongo.util import (
+from fiftyone.core._pymongo_proxy.cursor import Cursor, RawBatchCursor
+from fiftyone.core._pymongo_proxy.util import (
     PymongoAPIBase,
     PymongoProxyMeta,
     with_doc_and_sig,
 )
 
 if TYPE_CHECKING:
-    from fiftyone.pymongo.database import Database
+    from fiftyone.core._pymongo_proxy.database import Database
 
 
 def _proxy(

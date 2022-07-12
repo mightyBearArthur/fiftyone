@@ -2,7 +2,7 @@ import time
 
 from pymongo import MongoClient as PyMongoClient
 
-from fiftyone.pymongo import MongoClient as FiftyOneMongoClient
+from fiftyone.core._pymongo_proxy import MongoClient as FiftyOneMongoClient
 
 
 lcl_client = PyMongoClient("mongodb://localhost:27017")

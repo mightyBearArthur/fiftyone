@@ -27,6 +27,7 @@ import eta.core.utils as etau
 
 import fiftyone as fo
 import fiftyone.constants as foc
+import fiftyone.core._pymongo_proxy as pymongo_proxy
 from fiftyone.core.config import FiftyOneConfigError
 import fiftyone.core.fields as fof
 import fiftyone.core.service as fos
@@ -80,6 +81,7 @@ def get_db_config():
 
     try:
         # pylint: disable=no-member
+        # TODO: JJK - Remove mongengine query
         config = DatabaseConfigDocument.objects.get()
     except moe.DoesNotExist:
         config = DatabaseConfigDocument()
@@ -137,6 +139,7 @@ def establish_db_conn(config):
         RuntimeError: if the ``mongod`` found does not meet FiftyOne's
             requirements, or validation could not occur
     """
+    global _client_cls
     global _client
     global _db_service
     global _connection_kwargs
@@ -175,14 +178,19 @@ def establish_db_conn(config):
 
             raise error
 
-    _client = pymongo.MongoClient(
-        **_connection_kwargs, appname=foc.DATABASE_APPNAME
+    _client_cls = (
+        pymongo_proxy.MongoClient
+        if config.api_url is not None
+        else pymongo.MongoClient
     )
+
+    _client = _client_cls(**_connection_kwargs, appname=foc.DATABASE_APPNAME)
     _validate_db_version(config, _client)
 
     # Register cleanup method
     atexit.register(_delete_non_persistent_datasets_if_allowed)
 
+    # TODO: JJK - Remove connection to mongoengine
     connect(config.database_name, **_connection_kwargs)
 
     config = get_db_config()
@@ -194,17 +202,21 @@ def establish_db_conn(config):
 
 
 def _connect():
+    global _client_cls
     global _client
+
     if _client is None:
         global _connection_kwargs
 
-        _client = pymongo.MongoClient(
+        _client = _client_cls(
             **_connection_kwargs, appname=foc.DATABASE_APPNAME
         )
+        # TODO: JJK- Remove connection to mongoengine
         connect(fo.config.database_name, **_connection_kwargs)
 
 
 def _async_connect():
+    # TODO: Figure what uses the async connection
     global _async_client
     if _async_client is None:
         global _connection_kwargs

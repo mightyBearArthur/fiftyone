@@ -67,6 +67,9 @@ class FiftyOneConfig(EnvConfig):
         if d is None:
             d = {}
 
+        self.api_url = self.parse_string(
+            d, "api_url", env_var="FIFTYONE_API_URL", default=None
+        )
         self.database_uri = self.parse_string(
             d, "database_uri", env_var="FIFTYONE_DATABASE_URI", default=None
         )

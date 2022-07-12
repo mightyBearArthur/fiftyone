@@ -334,6 +334,7 @@ class BaseDocument(MongoEngineBaseDocument):
         return self.id is not None
 
 
+# TODO: JJK - Override any mongengine methods that call to a db
 class DynamicDocument(BaseDocument, mongoengine.DynamicDocument):
     """Base class for dynamic documents that are stored in a MongoDB
     collection.
@@ -349,7 +350,12 @@ class DynamicDocument(BaseDocument, mongoengine.DynamicDocument):
     meta = {"abstract": True}
 
 
-class Document(BaseDocument, mongoengine.Document):
+class _mongoengineDocument(mongoengine.Document):
+    ...
+
+
+# TODO: JJK - Override any mongengine methods that call to a db
+class Document(BaseDocument, _mongoengineDocument):
     """Base class for documents that are stored in a MongoDB collection.
 
     The ID of a document is automatically populated when it is added to the

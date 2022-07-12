@@ -7,17 +7,17 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pymongo.database import Database as _Database
 
-from fiftyone.pymongo.change_stream import DatabaseChangeStream
-from fiftyone.pymongo.command_cursor import CommandCursor
-from fiftyone.pymongo.collection import Collection
-from fiftyone.pymongo.util import (
+from fiftyone.core._pymongo_proxy.change_stream import DatabaseChangeStream
+from fiftyone.core._pymongo_proxy.command_cursor import CommandCursor
+from fiftyone.core._pymongo_proxy.collection import Collection
+from fiftyone.core._pymongo_proxy.util import (
     PymongoAPIBase,
     PymongoProxyMeta,
     with_doc_and_sig,
 )
 
 if TYPE_CHECKING:
-    from fiftyone.pymongo.client import Client
+    from fiftyone.core._pymongo_proxy.client import Client
 
 
 def _proxy(

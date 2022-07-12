@@ -4905,6 +4905,7 @@ def _load_dataset(name, virtual=False):
 
     try:
         # pylint: disable=no-member
+        # TODO: JJK - Remove mongengine query
         dataset_doc = foo.DatasetDocument.objects.get(name=name)
     except moe.DoesNotExist:
         raise ValueError("Dataset '%s' not found" % name)

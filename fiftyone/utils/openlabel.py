@@ -570,6 +570,7 @@ class OpenLABELAnnotations(object):
             dictionary of frame numbers to frame level fields and label objects
         """
         stream_infos = self.streams.get_stream_info(uri)
+        # TODO: JJK - Remove mongengine query
         sample_objects = self.objects.get_objects(stream_infos)
         return sample_objects.to_labels(
             frame_size,

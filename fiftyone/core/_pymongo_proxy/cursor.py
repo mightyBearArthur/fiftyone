@@ -17,10 +17,10 @@ from typing import (
 
 from pymongo.cursor import Cursor as _Cursor
 
-from fiftyone.pymongo.util import PymongoWSBase, PymongoProxyMeta
+from fiftyone.core._pymongo_proxy.util import PymongoWSBase, PymongoProxyMeta
 
 if TYPE_CHECKING:
-    from fiftyone.pymongo.collection import Collection
+    from fiftyone.core._pymongo_proxy.collection import Collection
 
 _DocumentType = TypeVar("_DocumentType")
 

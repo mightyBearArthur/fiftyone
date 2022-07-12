@@ -21,6 +21,7 @@ class BaseEmbeddedDocument(MongoEngineBaseDocument):
     """
 
 
+# TODO: JJK - Override any mongengine methods that call to a db
 class EmbeddedDocument(BaseEmbeddedDocument, mongoengine.EmbeddedDocument):
     """Base class for documents that are embedded within other documents and
     therefore are not stored in their own collection in the database.
@@ -33,6 +34,7 @@ class EmbeddedDocument(BaseEmbeddedDocument, mongoengine.EmbeddedDocument):
         self.validate()
 
 
+# TODO: JJK - Override any mongengine methods that call to a db
 class DynamicEmbeddedDocument(
     BaseEmbeddedDocument,
     mongoengine.DynamicEmbeddedDocument,

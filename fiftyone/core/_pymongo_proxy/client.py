@@ -7,10 +7,10 @@ from typing import Any
 
 from pymongo import MongoClient as _MongoClient
 
-from fiftyone.pymongo.database import Database
-from fiftyone.pymongo.change_stream import ClusterChangeStream
-from fiftyone.pymongo.command_cursor import CommandCursor
-from fiftyone.pymongo.util import (
+from fiftyone.core._pymongo_proxy.database import Database
+from fiftyone.core._pymongo_proxy.change_stream import ClusterChangeStream
+from fiftyone.core._pymongo_proxy.command_cursor import CommandCursor
+from fiftyone.core._pymongo_proxy.util import (
     PymongoAPIBase,
     PymongoProxyMeta,
     with_doc_and_sig,

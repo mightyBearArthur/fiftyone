@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, Any, List, Dict, Optional, Union
 
 from pymongo.change_stream import ChangeStream as _ChangeStream
 
-from fiftyone.pymongo.util import PymongoWSBase, PymongoProxyMeta
+from fiftyone.core._pymongo_proxy.util import PymongoWSBase, PymongoProxyMeta
 
 
 if TYPE_CHECKING:
-    from fiftyone.pymongo.client import Client
-    from fiftyone.pymongo.database import Database
-    from fiftyone.pymongo.collection import Collection
+    from fiftyone.core._pymongo_proxy.client import Client
+    from fiftyone.core._pymongo_proxy.database import Database
+    from fiftyone.core._pymongo_proxy.collection import Collection
 
 
 def _proxy(
