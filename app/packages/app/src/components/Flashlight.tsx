@@ -411,7 +411,8 @@ export default React.memo(() => {
         }
       },
       []
-    )
+    ),
+    true
   );
 
   useLayoutEffect(() => {
